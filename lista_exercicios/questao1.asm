@@ -2,7 +2,7 @@
 # Arquitetura e Organização de Computadores - 2025.1
 # Projeto 01 - Assembly MIPS e Simulador MARS
 
-# Grupo: Gabriel Nascimento e Lucas Pontes
+# GRUPO: Gabriel Nascimento e Lucas Pontes
 
 # Questão 1
 # Esse arquivo contém a implementação em assembly MIPS das 
@@ -13,73 +13,130 @@
 .data
 	#Parâmetros para TESTE_STRCPY
 	end_origem: .asciiz "String de teste" 		#aloca um espaço na mémoria para a origem, contendo uma string
-	end_destino: .space 100 					#aloca um espaço na mémora para o destino
+	end_destino: .space 50 					#aloca um espaço na mémora para o destino
 	
 	#Parâmetros para TESTE_MEMCPY
-	end_origem2: .asciiz "01234567890123456789"
-	end_destino2: .space 100
+	end_origem2: .asciiz "0123456789"
+	end_destino2: .space 50
 	num: .word 20 								#número de bytes a ser copiado
-
+	
+	#Parâmetros para TESTE_STRCMP
+	str1: .asciiz "abc"						
+	str2: .asciiz "aba"
 	
 .text	
 	main:
-		#TESTE_STRCPY:
-			#la $a1, end_origem 						#carrega o endereço de memória da origem que aponta para a string de teste
-			#la $a0, end_destino 					#endereço de destino para teste
-			#jal strcpy 								#chamada da função
+		#TESTE_STRCPY
+		#la $a1, end_origem		#carrega o endereço de memória da origem que aponta para a string de teste
+		#la $a0, end_destino 	#endereço de destino para teste
+		#jal strcpy 			#chamada da função
 		
-			#add $a0, $zero, $v0 					#guarda o retorno da função em $a0 para que sua string seja impressa
-			#li $v0, 4 								#carrega o service number de impressão de string
-			#syscall
+		#add $a0, $zero, $v0 	#guarda o retorno da função em $a0 para que sua string seja impressa
+		#li $v0, 4 				#carrega o service number de impressão de string
+		#syscall
 	
-		TESTE_MEMCPY:
-			la $a1, end_origem2						
-			la $a0, end_destino2
-			lw $a2, num
+		#TESTE_MEMCPY
+		#la $a1, end_origem2					
+		#la $a0, end_destino2
+		#lw $a2, num
 		
-			jal memcpy
+		#jal memcpy
+		
+		#TESTE_STRCMP
+		la $a0, str1
+		la $a1, str2
+			
+		jal strcmp
 
-		
+		add $s0, $v0, $zero
+
 		#finaliza o programa
 		li $v0, 10
 		syscall
 	
 	# Função a - strcpy	
 	strcpy:
-		add $v0, $zero, $a0 					#guarda o endereço de destino em v0
+		add $v0, $zero, $a0	#guarda o endereço de destino em v0
 		
 		strcpy_loop:
-			lb $t0, 0($a1) 						#carrega um byte (caractere) da string apontada pelo endereço de origem
-			beq $t0, $zero, end_strcpy 			#verifica se o byte representa o caractere NULL '\0' = 0b(0000 0000) = 0
+			lb $t0, 0($a1) 				#carrega um byte (caractere) da string apontada pelo endereço de origem
+			beq $t0, $zero, end_strcpy 	#verifica se o byte representa o caractere NULL '\0' = 0b(0000 0000) = 0
 			
-			sb $t0, 0($a0) 						#copia o byte para a posição correspondente do endereço de destino.
-			addi $a1, $a1, 1 					#incrementa a1 para acessar o próximo endereço de byte.
-			addi $a0, $a0, 1 					#incrementa a0 para acessar o próximo endereço de byte.
+			sb $t0, 0($a0) 		#copia o byte para a posição correspondente do endereço de destino.
+			addi $a1, $a1, 1 	#incrementa a1 para acessar o próximo endereço de byte.
+			addi $a0, $a0, 1 	#incrementa a0 para acessar o próximo endereço de byte.
 			
 			j strcpy_loop
 		end_strcpy:
-			sb $t0, 0($a0) 						#insere o caractere '\0'
-			jr $ra 								#retorna para a instrução seguinte do caller
+			sb $t0, 0($a0) 	#insere o caractere '\0'
+			jr $ra 			#retorna para a instrução seguinte do caller
 			
 	# Função b - memcpy
 	memcpy:
-		add $v0, $zero, $a0 					#guarda o endereço de destino em v0
-		li $t1, 0								#atribui a $t1 (contador) o valor 0.
+		add $v0, $zero, $a0 	#guarda o endereço de destino em v0
+		li $t1, 0				#atribui a $t1 (contador) o valor 0.
 	
 		memcpy_loop:
-			slt $t0, $t1, $a2					#verifica se o contador $t1 é menor que 'num'.
-			beq $t0, $zero, end_memcpy			#finaliza a copia de bytes caso a verificação acima de falso.
+			slt $t0, $t1, $a2			#verifica se o contador $t1 é menor que 'num'.
+			beq $t0, $zero, end_memcpy	#finaliza a copia de bytes caso a verificação acima de falso.
 			
-			lb $t0, 0($a1)						#carrega o valor do byte atual do bloco de origem.
-			sb $t0, 0($a0)						#salva o mesmo valor na posição correspondente do destino.
+			lb $t0, 0($a1)	#carrega o valor do byte atual do bloco de origem.
+			sb $t0, 0($a0)	#salva o mesmo valor na posição correspondente do destino.
 			 						            
-			addi $a1, $a1, 1 					#incrementa a1 para acessar o próximo endereço de byte.
-			addi $a0, $a0, 1 					#incrementa a0 para acessar o próximo endereço de byte.
+			addi $a1, $a1, 1 	#incrementa a1 para acessar o próximo endereço de byte.
+			addi $a0, $a0, 1 	#incrementa a0 para acessar o próximo endereço de byte.
 			
-			addi $t1, $t1, 1					#incrementa o contador ($t1 = $t1 + 1).
+			addi $t1, $t1, 1	#incrementa o contador ($t1 = $t1 + 1).
 			
 			j memcpy_loop
 		end_memcpy:
-			jr $ra								#retorna para a instrução seguinte do caller
+			jr $ra	#retorna para a instrução seguinte do caller
 	
+	# Função c - strcmp
+	strcmp:
+		strcmp_loop:
+			lb $t0, 0($a0)	#carrega o char do endereço base de str1.
+			lb $t1, 0($a1)	#carrega o char do endereço base de str2.
 			
+			beq $t0, $zero, str1_null	#verifica se o char em str1 é '\0' (NULL).
+			beq $t1, $zero, str2_less	#verifica se o char em str2 é '\0' (NULL).
+	
+			j is_equal #nenhum dos char é '\0' (NULL).
+			
+			str1_null:
+				beq $t1, $zero, str1_str2_equal #verifica se o char em str2 também é '\0' (NULL)
+				j str1_less 
+			
+			is_equal:
+				beq $t0, $t1, equal	#verifica se os dois char são iguais.	
+			
+				#verifica se o char em str1 tem valor decimal menor que o char de str2, ou o contrário.	
+				slt $t2, $t0, $t1
+				bne $t2, $zero, str1_less	#str1 < str2
+				j str2_less					#str2 < str1
+			
+			equal:
+				addi $a0, $a0, 1	#incrementa a0 para acessar o próximo endereço de byte.
+				addi $a1, $a1, 1	#incrementa a1 para acessar o próximo endereço de byte.
+				j strcmp_loop		#chamada recursiva com os endereços de byte seguintes.
+		
+		#retorna -1 quando encontrado uma diferença, sendo o char de str1 com valor decimal menor que str2.	
+		str1_less:
+			addi $v0, $zero, -1
+			j end_strcmp
+			
+		#retorna 1 quando encontrado uma diferença, sendo o char de str2 com valor decimal menor que str1.		
+		str2_less:
+			addi $v0, $zero, 1
+			j end_strcmp
+			
+		#retorna 0 se str1 e str2 forem iguais	
+		str1_str2_equal:
+			add $v0, $zero, $zero
+			j end_strcmp
+			
+		end_strcmp:
+			jr $ra	#retorna para a instrução seguinte do caller
+				
+				
+					
