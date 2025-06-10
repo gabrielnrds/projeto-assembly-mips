@@ -21,14 +21,18 @@
 	#num: .word 20 								#número de bytes a ser copiado.
 	
 	#Parâmetros para TESTE_STRCMP/STRNCMP
-	str1: .asciiz "ab"						
-	str2: .asciiz "ab"
+	#str1: .asciiz "abc"						
+	#str2: .asciiz "ab!"
 	#STRNCMP
-	num: .word 3
+	#num: .word 2
+	
+	#Parâmetros para TESTE_STRCAT
+	destination_str: .asciiz "Hello, "
+	source_str: .asciiz "World!"
 	
 .text	
 	main:
-		#TESTE_STRCPY
+	#TESTE_STRCPY
 		#la $a1, end_origem		#carrega o endereço de memória da origem que aponta para a string de teste.
 		#la $a0, end_destino 	#endereço de destino para teste.
 		#jal strcpy 			#chamada da função.
@@ -37,28 +41,36 @@
 		#li $v0, 4 				#carrega o service number de impressão de string.
 		#syscall
 	
-		#TESTE_MEMCPY
+	#TESTE_MEMCPY
 		#la $a1, end_origem2					
 		#la $a0, end_destino2
 		#lw $a2, num	
 		#jal memcpy
 		
-		#TESTE_STRCMP
+	#TESTE_STRCMP/STRNCMP
 		#la $a0, str1
-		#la $a1, str2	
-		#jal strcmp
-		#add $s0, $v0, $zero
+		#la $a1, str2
+		#lw $a3, num
 		
-		#TESTE_STRNCMP
-		la $a0, str1
-		la $a1, str2
-		lw $a2, num
-		jal strncmp
+		#jal strcmp
+
+		#jal strncmp
 		
 		#imprimir retorno no console
+		#add $a0, $zero, $v0 	
+		#li $v0, 1				
+		#syscall
+		
+	#TESTE_STRCAT
+		la $a0, destination_str
+		la $a1, source_str
+		jal strcat
+		
+		#imprimir resultado no console
 		add $a0, $zero, $v0 	
-		li $v0, 1				
+		li $v0, 4				
 		syscall
+		
 
 		#finaliza o programa
 		li $v0, 10
@@ -198,4 +210,32 @@
 			
 		end_strncmp:
 			jr $ra	#retorna para a instrução seguinte do caller.
+			
+	# Função e - strcat
+	strcat:
+		add $v0, $zero, $a0 #guarda o endereço de destination
+		
+		while_not_null:
+			lb $t0, 0($a0)	#carrega o byte de apontado por destination em t0.
+			beq $t0, $zero, strcat_loop	#se t0 = 0, então NULL ('\0') foi encontrado no endereço ($a0).
+			addi $a0, $a0, 1	#incrementa o endereço apontado por destination.
+			j while_not_null	#loop
+			
+		strcat_loop:
+			lb $t1, 0($a1)	#carrega o byte apontado por source.
+			beq $t1, $zero, end_strcat	#source ponta para NULL.
+			
+			sb $t1, 0($a0) 		#copia o char para o endereço de destination.
+			addi $a1, $a1, 1	#incrementa o endereço de source.
+			addi $a0, $a0, 1	#incrementa o endereço de destination.
+			j strcat_loop
+		
+		end_strcat:
+			sb $zero, 0($a0) #adiciona NULL no final da concatenação
+			jr $ra
+		
+		
+		
+		
+	
 					
