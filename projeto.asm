@@ -9,15 +9,15 @@ pedir_nome: .asciiz "\nDigite o nome do morador: "
 inv_command: .asciiz "COMANDO INVALIDO\n"
 inv_ap: .asciiz "APARTAMENTO INVALIDO\n"
 sair: .asciiz "Saindo..."
-ap_lotado: .asciiz "\nNao foi possivel adicionar o morador, o apartamento está lotado!\n"
+ap_lotado: .asciiz "\nNao foi possivel adicionar o morador, o apartamento esta lotado\n"
 morador_inexistente: .asciiz "Morador nao encontrado\n"
 morador_retirado: .asciiz "Morador removido\n"
 pedir_tipo_veiculo: .asciiz "\nDigite o tipo do veiculo(M) ou (C): " 
 pedir_placa: .asciiz "\nDigite a placa do veiculo: "
 pedir_modelo: .asciiz "\nDigite o modelo do veiculo: "
-vaga_lotada: .asciiz "\nA vaga esta ocupada\n"
+vaga_lotada: .asciiz "\nA Vaga esta ocupada\n"
 tipo_invalido: .asciiz "\nTipo invalido de veiculo inserido\n"
-veiculo_inexistente: .asciiz "\nO veiculo da placa digitada nao existe nesse apartamento\n"
+veiculo_inexistente: .asciiz "\nO Veiculo da placa digitada nao existe nesse apartamento\n"
 veiculo_retirado: .asciiz "\nVeiculo removido\n"
 ap_morador_vazio: .asciiz "\nMoradores do apartamento removidos\n"
 ap_veiculo_vazio: .asciiz "\nVeiculos do apartamento removidos\n"
@@ -36,9 +36,7 @@ formatado: .asciiz "\nTudo formatado!\n"
 
 input_buffer: .space 100 #string digitada
 apartamentos: .space 6000 #[10 andares * 4 apartamentos por andar * 5 moradores] * [tamanho string] | 150 para cada ap | 30 para cada morador |
-#apartamentos: .space 4320 #12 andares * 2ap/a * 6 moradores * tamanho string | 180 para cada ap | 30 para cada morador 
 veiculos: .space  1440 # [40 apartamentos * 30 tamanho string * 2 veiculos| 1 para tipo de veiculo | 7 para placa | 22 para modelo |
-#veiculos: .space  1440 #24 ap * 30 string * 2 veiculos| 1 para tipo de veiculo | 7 para placa | 22 para modelo
 input_nome:   .space 30       # Buffer para a string de saida (primeira palavra)
 input_tipo: .space 1
 input_placa: .space 7
