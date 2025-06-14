@@ -36,7 +36,7 @@ formatado: .asciiz "\nTudo formatado!\n"
 
 input_buffer: .space 100 #string digitada
 apartamentos: .space 6000 #[10 andares * 4 apartamentos por andar * 5 moradores] * [tamanho string] | 150 para cada ap | 30 para cada morador |
-veiculos: .space  1440 # [40 apartamentos * 30 tamanho string * 2 veiculos| 1 para tipo de veiculo | 7 para placa | 22 para modelo |
+veiculos: .space  2400 # [40 apartamentos * 30 tamanho string * 2 veiculos| 1 para tipo de veiculo | 7 para placa | 22 para modelo |
 input_nome:   .space 30       # Buffer para a string de saida (primeira palavra)
 input_tipo: .space 1
 input_placa: .space 7
@@ -185,14 +185,14 @@ loop_shell:
     	jal strncmp #compara
     	
     	move $t0, $v0 # resposta, 0 sao iguais
-	beq $t0, $zero, saida_programa#se for igual a sair, vai processar isso	
+	beq $t0, $zero, saida_programa #se for igual a sair, vai processar isso	
 #=======================================
 	print_string(inv_command) #vai printar que foi comando invalido
 	j loop_shell #volta pro loop de comando
 	
 	
 handlerAddMorador:
-	li $t9, 23 # coloca em t9 23 que eh o numero maximo de aos
+	li $t9, 39 # coloca em t9 39 [numero maximo de apartamentos]
 	
 	li $v0, 4 #carrega o codigo de printar uma string
     	la $a0, pedir_ap # carrega a frase
@@ -207,13 +207,13 @@ handlerAddMorador:
 	
 	la $t1, input_nome #carrega o endereco de onde salvou o nome digitado
 	
-	blt $t0, $zero, invalida # verifica se eh valido o numero do ap
-	bgt $t0, $t9, invalida # verifica se eh valido o numero do ap
+	blt $t0, $zero, invalida # verifica se o numero do ap esta valido
+	bgt $t0, $t9, invalida # verifica o numero do ap esta valido
 	
 	configurar_morador:
 		#calcular o endereco a salvar
-		li $t2, 180 # carrega 180, quantia por ap
-		mul $t0, $t0, $t2 #multiplica pelo ap em si, ex: ap 12 * 180 = x
+		li $t2, 150 # carrega 150, maximo por apartamento
+		mul $t0, $t0, $t2 #multiplica pelo ap em si, ex: ap 8 * 150 = x
 		
 		configurar_disponibilidade:
 			li $t3, 0 #contador de moradores
@@ -237,7 +237,7 @@ handlerAddMorador:
 
 
 handlerRmvMorador:
-	li $t9, 23 # coloca em t9 23 que eh o numero maximo de aps
+	li $t9, 39 # coloca em t9 39 [numero maximo de apartamentos]
 	
 	li $v0, 4 #carrega o codigo de printar uma string
     	la $a0, pedir_ap # carrega a frase
@@ -252,12 +252,12 @@ handlerRmvMorador:
 	
 	la $t1, input_nome #carrega o endereco de onde salvou o nome digitado
 	
-	blt $s1, $zero, invalida # verifica se o valido o numero do ap
-	bgt $s1, $t9, invalida # verifica se eh valido o numero do ap
+	blt $s1, $zero, invalida # verifica se o numero do ap esta
+	bgt $s1, $t9, invalida # verifica se o numero do ap esta
 	configurar_removedor:
 		#calcular o endereco a verificar
-		li $t2, 180 # carrega 180, quantia por ap
-		mul $s1, $s1, $t2 #multiplica pelo ap em si, ex: ap 12 * 180 = x
+		li $t2, 150 # carrega 150, maximo por apartamento
+		mul $s1, $s1, $t2 #multiplica pelo ap em si, ex: ap 8 * 150 = x
 			configurar_igualdade:
 				li $t3, 0 #contador de moradores
 				li $t4, 30 #tamanho de um morador do ap
@@ -271,7 +271,7 @@ handlerRmvMorador:
 					li $a2, 30
 					
 					jal strncmp # vai comparar a string
-					move $t6, $v0 #salva o resultado, 0 = strings iguais
+					move $t6, $v0 #salva o resultado, se 0 então strings iguais
 					beqz $t6, removerMorador # vai remover o morador
 					addi $t3, $t3, 1 # aumenta o contador de morador/indice
 					add $s1, $t4, $s1 # vai para o endereco do proximo morador
@@ -297,14 +297,14 @@ handlerRmvMorador:
 						j loop_shell # volta para o loop de comando
 		
 handlerAddAuto:
-	li $t9, 23 # coloca em t9 23 que eh o numero maximo de aps
+	li $t9, 39 # coloca em t9 39 que eh o numero maximo de aps
 
 	print_string(pedir_ap) # printa a frase de pedir um ap
 	read_int($t0) # recebe o ap e salva em t0
 	
 	print_string(pedir_tipo_veiculo) # pedir o tipo do veiculo
 	#receber o tipo em char
-	li $v0, 12 # codigo para ler um char(tipo)
+	li $v0, 12 # codigo para ler um tipo char
 	li $a2, 1 # limite de caracteres a ler
 	syscall # recebe
 	sb $v0, input_tipo # salvou o valor no espaco alocado
@@ -312,7 +312,7 @@ handlerAddAuto:
 	blt $t0, $zero, invalida # verifica se eh valido o numero do ap
 	bgt $t0, $t9, invalida # verifica se eh valido o numero do ap
 	
-	li $t1, 60 # carrega a quantia de espaco para cada apartamento(30 cada veiculo)
+	li $t1, 60 # carrega a quantia de espaco para cada apartamento(30 cada veiculo)#
 	mul $t0, $t0, $t1 # calcula a posicao inicial dos veiculos desse ap
 	li $t5, 0
 	verificar_endereco_auto:
@@ -394,7 +394,7 @@ handlerAddAuto:
 			j loop_shell # volta para o loop comando
 			
 handlerRmvAuto:
-	li $t9, 23 # coloca em t9 23 que eh o numero maximo de aps
+	li $t9, 39 # coloca em t9 39 que eh o numero maximo de aps
 
 	print_string(pedir_ap) # printa a frase de pedir um ap
 	read_int($s0) # recebe o ap e salva em t0
@@ -460,7 +460,7 @@ handlerRmvAuto:
 
 handlerLmpAp:
 
-		li $t9, 23 # coloca em t9 23 que eh o numero maximo de aps
+		li $t9, 39 # coloca em t9 23 que eh o numero maximo de apartamentos
 	
 		print_string(pedir_ap) # printa a frase de pedir um ap
 		read_int($s2) # recebe o ap e salva em t0
@@ -472,8 +472,8 @@ handlerLmpAp:
 		bgt $s2, $t9, invalida # verifica se eh valido o numero do ap
 	
 		li $t8, 0 #contador de moradores
-		li $t7, 180 # 180 bytes pra serem limpos
-		mul $s2, $s2, $t7 #multiplica pelo ap em si, ex: ap 12 * 180 = x
+		li $t7, 150 # 180 bytes pra serem limpos ######
+		mul $s2, $s2, $t7 #multiplica pelo ap em si, ex: ap 8 * 150 = x
 	
 	remove_ap_morador:
 	
@@ -491,7 +491,7 @@ handlerLmpAp:
 	remove_ap_veiculo:
 	
 				li $t7, 60 # 60 bytes pra serem limpos
-				mul $t6, $t6, $t7 #multiplica pelo ap em si, ex: ap 12 * 60 = x
+				mul $t6, $t6, $t7 #multiplica pelo ap em si, ex: ap 39 * 60 = x
 	
 		
 				loop_remover_ap_veiculo:
@@ -510,26 +510,26 @@ handlerinfoAp:
 	
 
 handlerInfoGeral:
-    	li $t9, 24            # Total de apartamentos
-    	li $t7, 0             # Contador de índice de apartamentos (0...23)
+    	li $t9, 40            # Total de apartamentos
+    	li $t7, 0             # Contador de índice de apartamentos (0 ... 39)
     	li $t3, 0             # Contador de apartamentos ocupados
     	li $t2, 0             # Endereço do array/índice
-    	li $t6, 180           # Tamanho de cada apartamento em bytes
+    	li $t6, 150           # Tamanho de cada apartamento em bytes
 
 	loop_info_aps:
-    	beq $t7, 24, sair_info  # Se todos os apartamentos foram verificados, sair do loop
+    	beq $t7, 40, sair_info  # Se todos os apartamentos foram verificados, sair do loop
     	lb $t0, apartamentos($t2)  # Carregar o byte que indica ocupação do apartamento
     	bnez $t0, conta_ap        # Se o apartamento está ocupado, vá para `conta_ap`
 
     	# Caso o apartamento esteja vazio
     	addi $t7, $t7, 1          # Incrementar índice de apartamentos
-    	addi $t2, $t2, 180        # Mover para o próximo apartamento
+    	addi $t2, $t2, 150        # Mover para o próximo apartamento
     	j loop_info_aps           # Continuar o loop
 
 	conta_ap:
     	addi $t3, $t3, 1          # Incrementar contador de apartamentos ocupados
     	addi $t7, $t7, 1          # Incrementar índice de apartamentos
-    	addi $t2, $t2, 180        # Mover para o próximo apartamento
+    	addi $t2, $t2, 150        # Mover para o próximo apartamento
     	j loop_info_aps           # Continuar o loop
 
 	sair_info:
@@ -572,7 +572,7 @@ handlerSalvar:
 	li $v0, 15 # carrega o codigo de escrever no arquivo
 	move $a0, $s0 # 
 	la $a1, apartamentos
-	li $a2, 4320
+	li $a2, 6000
 	syscall
 	
 	li $v0, 16
@@ -590,7 +590,7 @@ handlerSalvar:
 	li $v0, 15
 	move $a0, $s0
 	la $a1, veiculos
-	li $a2, 1440
+	li $a2, 2400
 	syscall
 	
 	li $v0, 16
@@ -611,7 +611,7 @@ handlerRecarregar:
 	li $v0, 14 # carrega o codigo de ler
 	move $a0, $s0 # passa o descritor
 	la $a1, apartamentos # carrega a string dos aps
-	li $a2, 4320 # tamanho a ser lido
+	li $a2, 6000 # tamanho a ser lido
 	syscall
 	
 	li $v0, 16 # carrega o codigo de fechar o arquivo
@@ -629,7 +629,7 @@ handlerRecarregar:
 	li $v0, 14 # carrega o codigo de ler
 	move $a0, $s0 # passa o descritor
 	la $a1, veiculos # carrega a string dos veiculos
-	li $a2, 1440 # passa o tamanho a ser lido
+	li $a2, 2400 # passa o tamanho a ser lido
 	syscall
 	
 	li $v0, 16 # carrega o codigo de fechar o arquivo
@@ -641,8 +641,8 @@ handlerRecarregar:
 	
 handlerFormatar:
 	li $t8, 0 # savar 0 para escrever
-	li $t7, 4320 # 180 bytes pra serem limpos do aps
-	la $s2, apartamentos # endereco dos aps a serem formatados
+	li $t7, 6000 # 150 bytes pra serem limpos dos apartamentos
+	la $s2, apartamentos # endereco dos apartamentos a serem formatados
 	formatar_aps:
     			loop_formatar_aps:
     				blt $t7, $zero, aps_formatados # terminou de iterar pelo nome e zerou ele todo
@@ -655,7 +655,7 @@ handlerFormatar:
 					j formatar_veiculo
 
 			formatar_veiculo:
-				li $t7, 1440 # bytes pra serem limpos	
+				li $t7, 2400 # bytes pra serem limpos	
 				la $t6, veiculos
 				loop_formatar_veiculo:
     					blt $t7, $zero, veiculos_formatados # terminou de iterar pelo nome e zerou ele todo
@@ -735,5 +735,5 @@ strcmp_exit:
 	jr $ra #volta para onde foi chamado
 	
 saida_programa:
-	li $v0, 10
+	li $v0, 10 #encerra o programa
 	syscall
