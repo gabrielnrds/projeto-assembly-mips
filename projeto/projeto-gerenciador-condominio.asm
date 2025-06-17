@@ -1,15 +1,28 @@
-.data
+# Universidade Federal Rural de Pernambuco - UFRPE
+# Arquitetura e Organização de Computadores - 2025.1
+# Projeto 01 - Assembly MIPS e Simulador MARS
 
-shell: .asciiz "GL-shell>> "
-linha: .asciiz "\n"
-input_buffer: .space 100
+# GRUPO: Gabriel Nascimento e Lucas Pontes
+
+# PROJETO - ASSEMBLY MIPS - GERENCIADOR DE CONDOMINIO
+# Implementação de um gerenciador de condominio, onde é possível registrar até 5 moradores para cada apartamento (nº0 ... nº39).
+# Além disso, para cada apartamento pode-se guardar 2 motos ou 1 carro.
+
+.data
+shell: .asciiz "GL-shell>> " # Banner do shell de comandos
+linha: .asciiz "\n" 		# Quebra de linha
+espaco: .asciiz "\t"
+input_buffer: .space 100	# Espaço reservado para o input do usuário
+tipo_buffer: .space 2		# Espaço reservado para o input do tipo do veiculo
+modelo_buffer: .space 17	# Espaço reservado para o modelo do veiculo
+cor_buffer: .space 13		# Espaço reservado para a cor do veiculo
 
 # Configuração de espaço na memória
 apartamentos: .space 6400  # 40 apartamentos × 5 moradores × 32 (para o nome). 160 bytes cada apt
-nome_buffer: .space 32
-veiculos: .space 2560	# 1 tipo + 7 placa + 24 modelo = 32. 32 * 2 veiculos = 64. 64 * 40 apt = 2560
+nome_buffer: .space 32	   # Espaço reservado para o input do nome de um morador
+veiculos: .space 2560	   # 1 tipo + 17 modelo + 13 cor = 32. 32 * 2 veiculos = 64. 64 * 40 apt = 2560
 
-#comandos disponiveis
+# Comandos disponiveis
 cmd_1: .asciiz "ad_morador"
 cmd_2: .asciiz "rm_morador"
 cmd_3: .asciiz "ad_auto"
@@ -22,18 +35,38 @@ cmd_9: .asciiz "recarregar"
 cmd_10: .asciiz "formatar"
 cmd_11: .asciiz "sair"
 
-# mendagens
-cmd_invalido: .asciiz "Comando invalido"
-ap_invalido: .asciiz "Falha: AP invalido"
-ap_cheio: .asciiz "Falha: AP com numero max de moradores"
-morador_add: .asciiz "Morador adicionado com sucesso!"
+# MENSAGENS
+cmd_invalido: .asciiz "Comando invalido\n"
+ap_invalido: .asciiz "Falha: AP invalido\n"
+ap_cheio: .asciiz "Falha: AP com numero max de moradores\n"
+morador_add: .asciiz "Morador adicionado com sucesso!\n"
+morador_nao_encontrado: .asciiz "Falha: morador nao encontrado\n"
+morador_rmv: .asciiz "Morador removido com sucesso!\n"
+ap_limpo: .asciiz "Apartamento limpado com sucesso!\n"
+veiculo_add: .asciiz "Veiculo adicionado com sucesso!\n"
+tp_invalido: .asciiz "Falha: tipo invalido\n"
+garagem_cheia: .asciiz "Falha: AP com numero max de automóveis\n"
+veiculo_removido: .asciiz "Automóvel removido com sucesso\n"
+veiculo_nao_encontrado: .asciiz "Falha: automóvel nao encontrado\n"
 
+
+ap_prefixo: .asciiz "AP: "
+moradores_label: .asciiz "Moradores:\n"
+ap_vazio: .asciiz "Apartamento vazio\n"
+carro_label: .asciiz "Carro:\n"
+moto_label: .asciiz "Moto:\n"
+modelo_label: .asciiz "\tModelo: "
+cor_label: .asciiz "\n\tCor: "
+all: .asciiz "all"
+
+# Macro para a quebra de linha no terminal
 .macro print_line
 	li $v0, 4
 	la $a0, linha
 	syscall
 .end_macro
 
+# Macro para a impressão de mensagens no terminal
 .macro print_string %string
 	li $v0, 4
 	la $a0, %string
@@ -41,14 +74,18 @@ morador_add: .asciiz "Morador adicionado com sucesso!"
 .end_macro 
 
 .text
-input_loop:
-	print_string(shell)
 
+# Loop principal do programa, verifica constantemente pelo input do usuário
+input_loop:
+	print_string(shell)	# Imprime o banner
+	
+	# Solicita pelo input do usuário
 	li $v0, 8
 	la $a0, input_buffer
-	la $a1, 100
+	la $a1, 100	# Tamanho máximo do input
 	syscall
-
+	
+	# Chamada para o interpretador de comandos
 	jal interpretador_cmd
 
 	j input_loop
@@ -56,259 +93,813 @@ input_loop:
 li $v0, 10
 syscall
 
-# Função responsável por interpretar o input digitado pelo usuário, identificando os comandos do sistema ou retornando
-# uma mensagem de erro.
+# Função responsável por interpretar o input digitado pelo usuário, identificando os comandos do sistema e retornando mensagens
+# de erro no caso de comandos inválidos.
 interpretador_cmd:
-	# cmd_1
-	la $a0, input_buffer
-	la $a1, cmd_1
-	la $a3, 10
+# cmd_1 - ad_morador
+	la $a0, input_buffer	# Carrega o endereço do input do usuário em $a0
+	la $a1, cmd_1			# Carrega o endereço da string cmd_1 em $a1
+	la $a3, 10				# O input vai ser comparado com os 10 bytes da string "ad_morador"
 	
+	# Chamada a função de comparação de strings (strncmp)
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	jal strncmp
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
 	
-	beq $v0, $zero, opcoes_ad_morador
+	beq $v0, $zero, ad_morador	# Comando ad_morador identificado
 	
-	# cmd_2
-	la $a0, input_buffer
-	la $a1, cmd_2
+# cmd_2 - rm_morador
+	la $a0, input_buffer	# Carrega o endereço do input do usuário em $a0
+	la $a1, cmd_2			# Carrega o endereço da string cmd_2 em $a1
+							# $a3 já está carregado com o valor 10 (oculta-se)
 	
+	# Chamada a função de comparação de strings (strncmp)
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	jal strncmp
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
 	
-	beq $v0, $zero, rm_morador
+	beq $v0, $zero, rm_morador # Comando rm_morador identificado
 	
-	# cmd_3
-	la $a0, input_buffer
-	la $a1, cmd_3
-	la $a3, 7
+# cmd_3 - ad_auto
+	la $a0, input_buffer 	# Carrega o endereço do input do usuário em $a0
+	la $a1, cmd_3			# Carrega o endereço da string cmd_3 em $a1
+	la $a3, 7				# O input vai ser comparado com os 7 bytes da string "ad_auto"
 	
+	# Chamada a função de comparação de strings (strncmp)
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	jal strncmp
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
 	
-	beq $v0, $zero, ad_auto
+	beq $v0, $zero, ad_auto	# Comando ad_auto identificado
 	
-	# cmd_4
-	la $a0, input_buffer
-	la $a1, cmd_4
-	la $a3, 7
+# cmd_4 - rm_auto
+	la $a0, input_buffer	# Carrega o endereço do input do usuário em $a0
+	la $a1, cmd_4			# Carrega o endereço da string cmd_4 em $a1
+							# $a3 já está carregado com o valor 7 (oculta-se)
 	
+	# Chamada a função de comparação de strings (strncmp)
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	jal strncmp
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
 	
-	beq $v0, $zero, rm_auto
+	beq $v0, $zero, rm_auto	# Comando rm_auto identificado
 	
-	# cmd_5
-	la $a0, input_buffer
-	la $a1, cmd_5
-	la $a3, 9
-	
+# cmd_5 - limpar_ap
+	la $a0, input_buffer	# Carrega o endereço do input do usuário em $a0
+	la $a1, cmd_5			# Carrega o endereço da string cmd_5 em $a1
+	la $a3, 9				# O input vai ser comparado com os 9 bytes da string "limpar_ap"
+
+	# Chamada a função de comparação de strings (strncmp)
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	jal strncmp
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
 	
-	beq $v0, $zero, limpar_ap
+	beq $v0, $zero, limpar_ap # Comando limpar_ap identificado
 	
-	# cmd_6
-	la $a0, input_buffer
-	la $a1, cmd_6
-	la $a3, 7
+# cmd_6 - info_ap
+	la $a0, input_buffer	# Carrega o endereço do input do usuário em $a0
+	la $a1, cmd_6			# Carrega o endereço da string cmd_6 em $a1
+	la $a3, 7				# O input vai ser comparado com os 7 bytes da string "info_ap"
 	
+	# Chamada a função de comparação de strings (strncmp)
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	jal strncmp
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
 	
-	beq $v0, $zero, info_ap
+	beq $v0, $zero, info_ap	# Comando info_ap identificado
 	
-	# cmd_7
-	la $a0, input_buffer
-	la $a1, cmd_7
-	la $a3, 10
+# cmd_7 - info_geral
+	la $a0, input_buffer	# Carrega o endereço do input do usuário em $a0
+	la $a1, cmd_7			# Carrega o endereço da string cmd_7 em $a1
+	la $a3, 10				# O input vai ser comparado com os 10 bytes da string "info_geral"
 	
+	# Chamada a função de comparação de strings (strncmp)
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	jal strncmp
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
 	
-	beq $v0, $zero, info_geral
+	beq $v0, $zero, info_geral	# Comando info_geral identificado
 	
-	# cmd_8
-	la $a0, input_buffer
-	la $a1, cmd_8
-	la $a3, 6
-	
+# cmd_8 - salvar
+	la $a0, input_buffer	# Carrega o endereço do input do usuário em $a0
+	la $a1, cmd_8			# Carrega o endereço da string cmd_8 em $a1
+	la $a3, 6				# O input vai ser comparado com os 6 bytes da string "salvar"
+
+	# Chamada a função de comparação de strings (strncmp)
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	jal strncmp
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
 	
-	beq $v0, $zero, salvar
+	beq $v0, $zero, salvar	# Comando salvar identificado
 	
-	# cmd_9
-	la $a0, input_buffer
-	la $a1, cmd_9
-	la $a3, 10
+# cmd_9 - recarregar
+	la $a0, input_buffer	# Carrega o endereço do input do usuário em $a0
+	la $a1, cmd_9			# Carrega o endereço da string cmd_9 em $a1
+	la $a3, 10				# O input vai ser comparado com os 10 bytes da string "recarregar"
 	
+	# Chamada a função de comparação de strings (strncmp)
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	jal strncmp
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
 	
-	beq $v0, $zero, recarregar
+	beq $v0, $zero, recarregar	# Comando recarregar identificado
 	
-	# cmd_10
-	la $a0, input_buffer
-	la $a1, cmd_10
-	la $a3, 8
-	
+# cmd_10 - formatar
+	la $a0, input_buffer	# Carrega o endereço do input do usuário em $a0
+	la $a1, cmd_10			# Carrega o endereço da string cmd_10 em $a1
+	la $a3, 8				# O input vai ser comparado com os 8 bytes da string "formatar"
+
+	# Chamada a função de comparação de strings (strncmp)
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	jal strncmp
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
 	
-	beq $v0, $zero, formatar
+	beq $v0, $zero, formatar	# Comando formatar identificado
 	
-	# cmd_11
-	la $a0, input_buffer
-	la $a1, cmd_11
-	la $a3, 4
-	
+# cmd_11 - sair
+	la $a0, input_buffer	# Carrega o endereço do input do usuário em $a0
+	la $a1, cmd_11			# Carrega o endereço da string cmd_11 em $a1
+	la $a3, 4				# O input vai ser comparado com os 4 bytes da string "sair"
+
+	# Chamada a função de comparação de strings (strncmp)
 	addi $sp, $sp, -4
 	sw $ra, 0($sp)
 	jal strncmp
 	lw $ra, 0($sp)
 	addi $sp, $sp, 4
 	
-	beq $v0, $zero, sair
+	beq $v0, $zero, sair	# Comando sair identificado
 	
 	# Não detectou um comando válido
 	comando_invalido:
 		print_string(cmd_invalido)
 		print_line
-		jr $ra
+		j input_loop
 	
+	# Numéro de apt inválido
 	apt_invalido:
     	print_string(ap_invalido)
     	print_line
-    	jr $ra
-    	
+    	j input_loop
+    
+    # Apt atingiu a capacidade máxima
     apt_cheio:
 		print_string(ap_cheio)
 		print_line
-    	jr $ra   	
-	
-opcoes_ad_morador:
-	# ler número do apartamento
+    	j input_loop   	
+
+# cmd_1: ad_morador-<apt>-<nome_morador>
+ad_morador:
+	# Ler número do apartamento
 	la $t0, input_buffer	# carrega o endereço do input inserido
 	addi $t0, $t0, 10		# pula para a parte do comando deve estar o '-'
 	
-	lb $t2, 0($t0)
-	bne $t2, 45, comando_invalido	# verifica se o '-' está presente
-	addi $t0, $t0, 1				# vai para o próximo endereço, contendo o número de apt
+	# Verifica se tem hífen após o comando
+	lb $t1, 0($t0)
+	bne $t1, 45, comando_invalido   # '-' = 45
+	addi $t0, $t0, 1				# vai para o endereço contendo o primeiro digito do apt
 	
-    li $s0, 0            # $s0 armazenará o número final do apartamento
-	 
-	read_ap_loop:
+	# Faz a leitura do num do apt do input buffer
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	jal read_ap
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+   	beq $t1, 10, comando_invalido # verifica se o usuário digitou apenas a opção de num do apt
+   	
+   	# Verifica se o apt é válido (0..39)
+	blt $s0, $zero, apt_invalido # não pode ser menor que 0
+	bgt $s0, 39, apt_invalido    # não pode ser maior que 39
 
-    	lb $t2, 0($t0)       # lê próximo caractere
-    	beq $t2, 45, verificar_num  # se for '-', terminou o número (ASCII 45 = '-')
-    	beq $t2, 10, comando_invalido # verifica se o usuário digitou o comando errado
-
-    	li $t3, 10
-    	mul $s0, $s0, $t3    # multiplica número atual por 10
-
-    	li $t3, 48
-    	sub $t2, $t2, $t3    # converte de ASCII para inteiro (ex: '5' → 5)
-    	add $s0, $s0, $t2    # acumula no número do apto
+    addi $t0, $t0, 1 # vai para o proxímo endereço do input, onde se inicia o nome do morador
+    	
+    la $a0, nome_buffer	# carrega o endereço do buffer de nome
+    add $a1, $zero, $t0	# carrega o endereço do nome contido no input digitado pelo usuário
+    
+    # Faz a cópia do nome inserido no input para o buffer de nome
+    addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	jal strcpy		
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
 		
+	add $s1, $zero, $v0 # guarda o endereço do nome em $s1.
+	
+	# Calcula endereço do apartamento
+	# end = apartamentos + apt * 160
+	addi $t0, $zero, 160 	# cada apartamento ocupa 160 bytes
+	mul $s0, $s0, 160	 	# calcula o endereço do apt
+	la $s2, apartamentos	# carrega o endereço do espaço alocado para os apartamentos
+	add $s2, $s2, $s0		# $s2 aponta para o primeiro morador do apartamento especificado
+	li $t1, 0			 	# contador de moradores
+	# Verifica a quantidade de moradores que ocupam o apt.
+	verificar_num_moradores:
+		beq $t1, 5, apt_cheio					# se $t1 = 5 -> apt cheio
+		lb $t0, 0($s2)							# carrega o byte do endereço atual
+		beq $t0, $zero, adicionar_morador		# se for igual a 0, essa área está vaga. Adiciona o morador em seguida
+		addi $t1, $t1, 1						# incrementa o contador de moradores no apt
+				
+		addi $s2, $s2, 32	# vai para o próximo endereço de morador do apartamento (32 por morador)
+	j verificar_num_moradores
+	
+	# Adiciona o morador do o nome passado no comando	
+	adicionar_morador:
+		la $a1, nome_buffer # carrega o endereço do nome digitado no arg a1
+		add $a0, $zero, $s2 # carrega o endereço do morador no arg a0
 		
-    	addi $t0, $t0, 1     # avança para próximo caractere	 
-
-    	j read_ap_loop
-    	
-    verificar_num:
-    	blt $s0, $zero, apt_invalido	# o num de apt deve ser entre 0 e 39
-    	bgt $s0, 39, apt_invalido
-    	
-    	# verifica se após o num e apt aparece '-'
-    	lb $t2, 0($t0)
-    	bne $t2, 45, comando_invalido
-    	addi $t0, $t0, 1 # vai para o proxímo endereço, onde se inicia o nome do morador
-    	
-    	la $a0, nome_buffer	# carrega o endereço do buffer de nome
-    	add $a1, $zero, $t0	# carrega o endereço do nome contido no input digitado pelo usuário
-    	
-    	addi $sp, $sp, -4
+		# Copia o nome do morador do buffer para o espaço vago do apartamento
+		addi $sp, $sp, -4
 		sw $ra, 0($sp)
 		jal strcpy		
 		lw $ra, 0($sp)
 		addi $sp, $sp, 4
 		
-		add $s1, $zero, $v0 # guarda o nome em $s1.
-		
-		addi $t0, $zero, 160 # cada apartamento ocupa 160 bytes
-		mul $s0, $s0, 160	 # calcula o endereço do apt
-		la $s2, apartamentos
-		add $s2, $s2, $s0
-		li $t1, 0			 # contador de moradores
-		verificar_num_moradores:
-			bgt $t1, 5, apt_cheio
-			lb $t0, 0($s2)
-			beq $t0, $zero, adicionar_morador
-			addi $t1, $t1, 1
-				
-			addi $s2, $s2, 32	# vai para o próximo endereço de morador do apartamento (32 por morador)
-			j verificar_num_moradores
-			
-		adicionar_morador:
-			la $a1, nome_buffer # carrega o endereço do nome digitado no arg a1
-			add $a0, $zero, $s2 # carrega o endereço do morador no arg a0
-	
-			addi $sp, $sp, -4
-			sw $ra, 0($sp)
-			jal strcpy		
-			lw $ra, 0($sp)
-			addi $sp, $sp, 4
-			
-			print_string(morador_add)
-			print_line
+		# Mensagem de sucesso
+		print_string(morador_add)
+		print_line
 	j input_loop
-		
+
+# cmd_2: rm_morador-<apt>-<nome_morador>	
 rm_morador:
-	print_string(cmd_2)
-	j input_loop
+	# Avança o ponteiro para após "rm_morador" (10 caracteres)
+	la $t0, input_buffer
+	addi $t0, $t0, 10
+	
+	# Verifica se tem hífen após o comando
+	lb $t1, 0($t0)
+	bne $t1, 45, comando_invalido   # '-' = 45
+	addi $t0, $t0, 1				# vai para o endereço contendo o primeiro digito do apt
+
+	# Faz a leitura do num do apt do input buffer
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	jal read_ap
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+   	beq $t1, 10, comando_invalido # verifica se o usuário digitou apenas a opção de num do apt
+   	
+   	# Verifica se o apt é válido (0..39)
+	blt $s0, $zero, apt_invalido # não pode ser menor que 0
+	bgt $s0, 39, apt_invalido    # não pode ser maior que 39
+	
+	addi $t0, $t0, 1 # Vai para o endereço contendo o nome do morador
+
+	# Copia nome do morador para nome_buffer
+	la $a0, nome_buffer
+	
+	add $a1, $zero, $t0
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	jal strcpy		
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+
+	# Calcula endereço do apartamento
+	# end = apartamentos + apt * 160
+	li $t1, 160				# calcula o endereço do apt
+	mul $t2, $s0, $t1		# calcula o endereço do apt
+	la $s2, apartamentos	# carrega o endereço do espaço alocado para os apartamentos
+	add $s2, $s2, $t2   	 # $s2 aponta para o primeiro morador do apt
+
+	# Loop para procurar o morador
+	li $t3, 0             # contador de moradores (0 a 4)
+	procurar_morador:
+		beq $t3, 5, nao_encontrado
+		add $a0, $zero, $s2         # slot atual
+		la $a1, nome_buffer			# carrega o nome digitado no comando
+		
+		# Verifica se um morador com o nome passado existe no apartamento	
+		addi $sp, $sp, -4
+		sw $ra, 0($sp)
+		jal strcmp					
+		lw $ra, 0($sp)
+		addi $sp, $sp, 4
+								
+		beq $v0, $zero, remover_morador # morador encontrado, remove-o em seguida
+
+		# Próximo slot
+		addi $s2, $s2, 32	# vai para o próximo endereço de morador
+		addi $t3, $t3, 1	# incrementa o contador de moradores
+	j procurar_morador
+	
+	# Apaga o nome do morador encontrado
+	remover_morador:
+		li $t5, 0 # contador (até 32)
+		apagar_nome_loop:
+			beq $t5, 32, fim_remocao # zerou todos os 32 bytes contendo o nome do morador
+			sb $zero, 0($s2)		# zera (apaga) o char do endereço
+			addi $s2, $s2, 1		# vai para o próximo endereço de byte
+			addi $t5, $t5, 1		# incremtena o número de char zerados
+		j apagar_nome_loop
+	
+	# Imprime uma mensagem de sucesso
+	fim_remocao:
+		print_string(morador_rmv)
+		print_line
+		j input_loop
+
+	# Imprime uma mensagem de erro caso o morador não seja encontrado
+	nao_encontrado:
+		print_string(morador_nao_encontrado)
+		print_line
+		j input_loop
+			
 ad_auto:
-	print_string(cmd_3)
-	j input_loop
+	#analise apartamento
+	la $t0, input_buffer
+	addi $t0, $t0, 7         # pula "ad_auto-"
+
+	# Verifica se tem hífen após o comando
+	lb $t1, 0($t0)
+	bne $t1, 45, comando_invalido   # '-' = 45
+	addi $t0, $t0, 1				# vai para o endereço contendo o primeiro digito do apt
+
+	# Faz a leitura do num do apt do input buffer
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	jal read_ap
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+   	beq $t1, 10, comando_invalido # verifica se o usuário digitou apenas a opção de num do apt
+	
+	# Verifica se o apt é válido (0..39)
+	blt $s0, $zero, apt_invalido # não pode ser menor que 0
+	bgt $s0, 39, apt_invalido    # não pode ser maior que 39
+
+	addi $t0, $t0, 1         # pula '-'
+
+	# analise tipo (apenas 1 caractere)
+	lb $t2, 0($t0)
+	sb $t2, tipo_buffer
+	addi $t0, $t0, 2         # pula tipo e '-'
+
+	# valida tipo
+	li $t3, 'm'
+	beq $t2, $t3, tipo_ok
+	li $t3, 'c'
+	beq $t2, $t3, tipo_ok
+	j tipo_invalido
+
+	tipo_ok:
+		# analise modelo
+		la $a0, modelo_buffer
+	
+		ler_modelo:
+			lb $t2, 0($t0)
+			beq $t2, 45, fim_modelo # "'-' = 45 (ASCII)"
+			sb $t2, 0($a0)
+			addi $t0, $t0, 1
+			addi $a0, $a0, 1
+		j ler_modelo
+	
+		fim_modelo:
+			sb $zero, 0($a0)
+			addi $t0, $t0, 1         # pula '-'
+
+		# analise cor
+		la $a0, cor_buffer
+		ler_cor:
+			lb $t2, 0($t0)
+			beq $t2, 10, fim_cor
+			sb $t2, 0($a0)
+			addi $t0, $t0, 1
+			addi $a0, $a0, 1
+		j ler_cor
+	
+		fim_cor:
+		sb $zero, 0($a0)
+
+	# valida se há espaço no AP
+	la $t1, veiculos
+	li $t3, 64               # cada AP = 2 veículos = 64 bytes
+	mul $t4, $s0, $t3		 # calcula o endereço do automóvel com base no número do apt
+	add $t1, $t1, $t4        # t1 = base do AP
+
+	li $t5, 0                # contador de veículos
+	li $t6, 0                # motos
+	li $t7, 0                # carros
+	
+	# Verifica se a espaço para veiculos
+	checar_slots:
+		bge $t5, 2, fim_checar  # já percorreu os 2 slots
+		lb $t8, 0($t1)
+		beq $t8, 0, proximo_slot # slot vazio, mas ainda conta
+
+		beq $t8, 'm', conta_moto
+		beq $t8, 'c', conta_carro
+		
+		proximo_slot:
+			addi $t1, $t1, 32
+			addi $t5, $t5, 1
+	j checar_slots
+	
+	# Conta uma moto do apt
+	conta_moto:
+		addi $t6, $t6, 1
+		j proximo_slot
+		
+	# Conta um carro do apt
+	conta_carro:
+   		addi $t7, $t7, 1
+    	j proximo_slot
+    	
+    fim_checar:
+    	# pega o tipo atual
+		la $a0, tipo_buffer
+		lb $t9, 0($a0)    # tipo atual (m ou c)
+		
+		# Se for carro
+		li $t3, 'c'
+		beq $t9, $t3, verifica_carro
+		
+		# Se for moto
+		li $t3, 'm'
+		beq $t9, $t3, verifica_moto
+		
+		j tipo_invalido # segurança
+
+	verifica_carro:
+		# Já tem 1 carro?
+		bge $t7, 1, msg_max_auto
+
+		# Já tem qualquer moto? (não pode misturar)
+		bgt $t6, 0, msg_max_auto
+
+		j pode_gravar
+		
+	verifica_moto:
+		# Já tem 1 carro? (não pode misturar)
+		bgt $t7, 0, msg_max_auto
+
+		# Já tem 2 motos?
+		bge $t6, 2, msg_max_auto
+
+		j pode_gravar
+	
+	pode_gravar:
+		# encontrar o primeiro slot vazio de novo
+		la $t1, veiculos
+		li $t3, 64               # cada AP = 2 veículos = 64 bytes
+		mul $t4, $s0, $t3
+		add $t1, $t1, $t4
+		
+		li $t5, 0
+		encontrar_slot_vazio:
+			bge $t5, 2, msg_max_auto      # segurança extra
+			lb $t8, 0($t1)
+			beq $t8, 0, gravar_veiculo
+			addi $t1, $t1, 32
+			addi $t5, $t5, 1
+		j encontrar_slot_vazio
+
+	gravar_veiculo:
+		# grava tipo
+		la $a0, tipo_buffer
+		lb $t2, 0($a0)
+		sb $t2, 0($t1)
+		
+		# grava modelo
+		la $a0, modelo_buffer
+		addi $t1, $t1, 1
+		
+		addi $sp, $sp, -4
+		sw $ra, 0($sp)
+		jal strcpy
+		lw $ra, 0($sp)
+		addi $sp, $sp, 4
+		
+		# grava cor
+		la $a0, cor_buffer
+		addi $t1, $t1, 16
+		
+		addi $sp, $sp, -4
+		sw $ra, 0($sp)
+		jal strcpy
+		lw $ra, 0($sp)
+		addi $sp, $sp, 4
+	
+		print_string(veiculo_add)
+		print_line
+		j input_loop
+		
+	tipo_invalido:
+		print_string(tp_invalido)
+		print_line
+		j input_loop
+			
+	msg_max_auto:
+		print_string(garagem_cheia)
+		print_line
+		j input_loop
+		
 rm_auto:
 	print_string(cmd_4)
 	j input_loop
+	
+# cmd_5: limpar_ap-<apt>
 limpar_ap:
-	print_string(cmd_5)
-	j input_loop
+	# Avança o ponteiro para após "limpar_ap" (9 caracteres)
+	la $t0, input_buffer
+	addi $t0, $t0, 9
+	
+	# Verifica se tem hífen após o comando
+	lb $t1, 0($t0)
+	bne $t1, 45, comando_invalido   # '-' = 45
+	addi $t0, $t0, 1				# vai para o endereço contendo o primeiro digito do apt
+
+	# Faz a leitura do num do apt do input buffer
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	jal read_ap
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+   	beq $t1, 45, comando_invalido # verifica se o usuário digitou '-' após o num do apt
+   	
+   	# Verifica se o apt é válido
+	blt $s0, $zero, apt_invalido
+	bgt $s0, 39, apt_invalido
+		
+	# Exclui todos os moradores do apt especificado
+	remover_moradores_ap:
+		# Calcula endereço do apartamento
+		# end = apartamentos + apt * 160
+		li $t1, 160
+		mul $t2, $s0, $t1
+		la $s2, apartamentos
+		add $s2, $s2, $t2    # $s2 aponta para o primeiro morador do apt
+	
+		li $t5, 0 # contador (até 160)
+		apagar_moradores_loop:
+			beq $t5, 160, fim_remocao_moradores # excluiu todos os moradores
+			sb $zero, 0($s2)		# zera (apaga) o char do endereço
+			addi $s2, $s2, 1		# vai para o próximo char
+			addi $t5, $t5, 1		# incrementa o número de char zerados
+		j apagar_moradores_loop
+		
+	fim_remocao_moradores:
+	
+	# Exclui todos os automóveis do apt especificado
+	remover_automoveis_ap:
+		# Calcula endereço dos automóveis do apt
+		# end = veiculos + apt * 64
+		li $t1, 64
+		mul $t2, $s0, $t1
+		la $s2, veiculos
+		add $s2, $s2, $t2    # $s2 aponta para o primeiro automovel do apt
+	
+		li $t5, 0 # contador (até 64)
+		apagar_automoveis_loop:
+			beq $t5, 64, fim_remocao_automoveis # excluiu todos os automoveis
+			sb $zero, 0($s2)		# zera (apaga) o char do endereço
+			addi $s2, $s2, 1		# vai para o próximo char
+			addi $t5, $t5, 1		# incrementa o número de char zerados
+		j apagar_automoveis_loop
+	
+	# Imprime uma mensagem de sucesso
+	fim_remocao_automoveis:
+		print_string(ap_limpo)
+		print_line
+		j input_loop
+
+# cmd_6: info_ap-<apt>
 info_ap:
-	print_string(cmd_6)
+	# Avança o ponteiro para após "info_ap" (7 caracteres)
+	la $t0, input_buffer
+	addi $t0, $t0, 7
+	
+	# Verifica se tem hífen após o comando
+	lb $t1, 0($t0)
+	bne $t1, 45, comando_invalido   # '-' = 45
+	addi $t0, $t0, 1				# vai para o endereço contendo o primeiro digito do apt
+	
+	add $a0, $zero, $t0  	# Carrega o endereço do input do usuário em $a0
+	la $a1, all				# Carrega o endereço da string "all" em $a1
+	la $a3, 3				# O input vai ser comparado com os 3 bytes da string "all"
+
+	# Verifica se o argumento passado é igual a "all"
+	addi $sp, $sp, -8
+	sw $ra, 0($sp)
+	sw $t0, 4($sp)
+	jal strncmp
+	lw $ra, 0($sp)
+	lw $t0, 4($sp)
+	addi $sp, $sp, 8
+	
+	beq $v0, $zero, info_ap_all	# Opcao "all" identificada
+	
+	# Faz a leitura do num do apt do input buffer
+	addi $sp, $sp, -4
+	sw $ra, 0($sp)
+	jal read_ap
+	lw $ra, 0($sp)
+	addi $sp, $sp, 4
+	
+   	beq $t1, 45, comando_invalido # verifica se o usuário digitou '-' após o num do apt
+   	
+   	# Verifica se o apt é válido (0..39)
+	blt $s0, $zero, apt_invalido
+	bgt $s0, 39, apt_invalido
+	
+	verificar_vazio:
+		# Calcula endereço do apartamento
+		# end = apartamentos + apt * 160
+		li $t1, 160
+		mul $t2, $s0, $t1		# calcula o endereço do apt
+		la $s2, apartamentos	# carrega o endereço do espaço alocado para os apartamentos
+		add $s2, $s2, $t2       # $s2 aponta para o primeiro morador do apt
+
+		# Loop para verificar se o apt está vazio
+		li $t3, 0             # contador de vagas disponiveis (0..4)
+		verificar_vazio_loop:
+			beq $t3, 5, apt_vazio
+		
+			lb $t1, 0($s2)		
+			bne $t1, $zero, print_ap
+
+			# Próximo slot
+			addi $s2, $s2, 32	# vai para o próximo endereço de morador
+			addi $t3, $t3, 1	# incrementa o contador vagas disponiveis
+		j verificar_vazio_loop
+		
+		print_ap:
+			# "AP":
+			print_string(ap_prefixo)
+			li $v0, 1
+			move $a0, $s0     # imprime número do apt
+			syscall
+			print_line
+			
+			# "Moradores:\n"
+			print_string(moradores_label)
+
+			imprimir_moradores:
+				beq $t3, 5, verificar_automoveis
+				lb $t0, 0($s2)
+				beq $t0, $zero, proximo_morador
+				#imprimir espaço
+				li $v0, 4
+				la $a0, espaco
+				syscall
+				# imprimir nome do morador
+				li $v0, 4
+				add $a0, $zero, $s2
+				syscall
+
+				proximo_morador:
+					addi $s2, $s2, 32
+					addi $t3, $t3, 1
+			j imprimir_moradores
+
+			verificar_automoveis:
+				# Calcula endereço da seção de veículos
+				li $t1, 64
+				mul $t2, $s0, $t1
+				la $s3, veiculos
+				add $s3, $s3, $t2
+			
+				lb $t0, 0($s3)
+
+				beq $t0, $zero, fim_print_ap # Nenhum automóvel cadastrado para o apt
+			
+				beq $t0, 'c', imprimir_carro
+				beq $t0, 'm', imprimir_moto
+			j input_loop
+
+			imprimir_carro:
+				# "Carro:\n"
+				print_string(carro_label)
+				# "Modelo: "
+				print_string(modelo_label)
+				# O modelo inicia após o byte de tipo
+				addi $a0, $s3, 1
+				li $v0, 4
+				syscall
+				print_line
+				# "Cor: "
+				print_string(cor_label)
+				addi $a0, $s3, 21    # A cor inicia após modelo (1 + 20)
+				li $v0, 4
+				syscall
+			j input_loop
+
+			imprimir_moto:
+				# "Moto:\n"
+				print_string(moto_label)
+				# Moto 1
+				print_string(modelo_label)
+				# O modelo inicia após o byte de tipo
+				addi $a0, $s3, 1
+				li $v0, 4
+				syscall
+				print_line
+				# "Cor: "
+				print_string(cor_label)
+				addi $a0, $s3, 21
+				li $v0, 4
+				syscall
+
+			# Moto 2 (verifica se existe)
+			addi $s3, $s3, 32    # próximo slot de automóvel
+			lb $t1, 0($s3)
+			beq $t1, 'm', moto2
+			j input_loop
+
+			moto2:
+				# "Modelo: "
+				print_string(modelo_label)
+				# O modelo inicia após o byte de tipo
+				addi $a0, $s3, 1
+				li $v0, 4
+				syscall
+				print_line
+				# "Cor: "
+				print_string(cor_label)
+				addi $a0, $s3, 21
+				li $v0, 4
+				syscall
+			j input_loop
+		fim_print_ap:
+			jr $ra
+	
+	# Imprime os dados de todos os apartamentos que não estão vazios em ordem crescente
+	info_ap_all:
+	li $t4, 0   # contador de apartamentos $t4 = 0 a 39
+
+	loop_info_ap_all:
+		bgt $t4, 39, input_loop  # se $t4 > 39, fim
+
+		# Carrega número do AP atual em $s0 (usado por print_ap e demais funções)
+		add $s0, $zero, $t4
+
+		# Verifica se o apartamento está vazio
+		# Calcula endereço base do ap: apartamentos + 160 * i
+		li $t1, 160
+		mul $t2, $s0, $t1
+		la $s2, apartamentos
+		add $s2, $s2, $t2    # $s2 aponta para o primeiro morador do apt atual
+
+		li $t3, 0             		 # contador de vagas verificadas
+		ap_vazio_all:
+			beq $t3, 5, print_ap_vazio  # se 5 moradores checados e todos vazios -> vazio
+			lb $t0, 0($s2)
+			bne $t0, $zero, print_ap_all # encontrou um morador, então printar
+			addi $s2, $s2, 32
+			addi $t3, $t3, 1
+		j ap_vazio_all
+	j loop_info_ap_all
+
+	print_ap_vazio:
+		# Imprime "AP: <num_apt>" mesmo se vazio
+		print_string(ap_prefixo)
+		li $v0, 1
+		add $a0, $zero, $s0
+		syscall
+		print_line
+		print_string(ap_vazio)
+	j proximo_ap_all
+	
+	print_ap_all:
+		# Chama o mesmo código do print_ap
+		addi $sp, $sp, -4	
+		sw $ra, 0($sp)
+		jal print_ap
+		lw $ra, 0($sp)
+		addi $sp, $sp, 4
+
+	proximo_ap_all:
+		addi $t4, $t4, 1
+		j loop_info_ap_all
+
+	apt_vazio:
+		# Imprime que o apartamento está vazio
+		print_string(ap_vazio)
+		print_line
 	j input_loop
+	
 info_geral:
 	print_string(cmd_7)
 	j input_loop
@@ -324,6 +915,27 @@ formatar:
 sair:
 	print_string(cmd_11)
 	j input_loop
+
+read_ap:
+	# Converte o número do apartamento (ASCII -> int)
+	li $s0, 0                      # $s0 armazenará o número do apartamento
+	li $t2, 48                     # caractere '0'
+	read_ap_loop:
+		lb $t1, 0($t0)	# carrega o char do endereço atual
+		
+		beq $t1, 45, fim_read_ap       # encontrou o próximo hífen
+		beq $t1, 10, fim_read_ap       # encontrou uma quebra de linha ('\n')
+		blt $t1, 48, comando_invalido  # 48 é o código do menor digito em ascii ('0' = 48)
+		bgt $t1, 57, comando_invalido  # 47 é o código do maior digito em ascii ('9' = 57)
+		
+		sub $t3, $t1, $t2              # dígito numérico
+		mul $s0, $s0, 10			   # adicionado mais uma casa númerica
+		add $s0, $s0, $t3			   # incrementa o digito no número do apartamento
+		addi $t0, $t0, 1			   # vai para o próximo digito do num do apartamento
+	j read_ap_loop
+
+fim_read_ap:
+	jr $ra
 	
 strncmp:	
 	strncmp_loop:
