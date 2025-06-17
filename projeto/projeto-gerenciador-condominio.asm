@@ -776,12 +776,12 @@ info_ap:
 
 			verificar_automoveis:
 				# Calcula endereço da seção de veículos
-				li $t1, 64
-				mul $t2, $s0, $t1
-				la $s3, veiculos
-				add $s3, $s3, $t2
+				li $t1, 64			# cada veículo ocupa 64 bytes
+				mul $t2, $s0, $t1	# cálcula o endereço do veículo com base no num do apt
+				la $s3, veiculos	# carrega o endereço do espaço reservado para os veículos
+				add $s3, $s3, $t2	# $s3 aponta para o primeiro veículo do apartamento especificado
 			
-				lb $t0, 0($s3)
+				lb $t0, 0($s3)		# carrega o primeiro byte do veículo
 
 				beq $t0, $zero, fim_print_ap # Nenhum automóvel cadastrado para o apt
 			
@@ -801,7 +801,7 @@ info_ap:
 				print_line
 				# "Cor: "
 				print_string(cor_label)
-				addi $a0, $s3, 21    # A cor inicia após modelo (1 + 20)
+				addi $a0, $s3, 18    # A cor inicia após modelo (1 + 17)
 				li $v0, 4
 				syscall
 			j input_loop
