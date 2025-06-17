@@ -185,7 +185,7 @@
 				#verifica se o char em str1 tem valor decimal menor que o char de str2, ou o contrário.	
 				slt $t2, $t0, $t1
 				bne $t2, $zero, strn1_less	#str1 < str2
-				j strn2_less					#str2 < str1
+				j strn2_less				#str2 < str1
 			
 			equal_strn:
 				addi $a0, $a0, 1	#incrementa a0 para acessar o próximo endereço de byte.

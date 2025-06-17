@@ -44,13 +44,13 @@ input_modelo: .space 22
 zero: .space 1
 
 #comandos disponiveis
-cmd1: .asciiz "addMorador"
-cmd2: .asciiz "rmvMorador"
-cmd3: .asciiz "addAuto"
-cmd4: .asciiz "rmvAuto"
-cmd5: .asciiz "limparAp"
-cmd6: .asciiz "infoAp"
-cmd7: .asciiz "infoGeral"
+cmd1: .asciiz "ad_morador"
+cmd2: .asciiz "rm_morador"
+cmd3: .asciiz "ad_auto"
+cmd4: .asciiz "rm_auto"
+cmd5: .asciiz "limpar_ap"
+cmd6: .asciiz "info_ap"
+cmd7: .asciiz "info_geral"
 cmd8: .asciiz "salvar"
 cmd9: .asciiz "recarregar"
 cmd10: .asciiz "formatar"
